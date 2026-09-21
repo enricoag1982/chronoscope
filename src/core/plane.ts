@@ -127,9 +127,15 @@ export function divergenceFor(
   horizon: Horizon,
   query: (attr: Attr, valid: Day, system: Day) => Value | undefined,
 ): Rect[] {
-  const own = log.filter((f) => f.attr === attr)
-  const validBreaks = breakpoints(horizon, own.map((f) => f.validFrom))
-  const systemBreaks = breakpoints(horizon, own.map((f) => f.systemTime))
+  // Breakpoints come from the WHOLE log here, not just this attribute — the
+  // asymmetry with planeFor is the point. The oracle for one attribute cannot
+  // move at another attribute's coordinates, but a strategy can: snapshots are
+  // whole-entity records, so a stale snapshot taken at a manager change is
+  // exactly where a salary answer starts being wrong. Filtering per attribute
+  // here makes the strategy's error invisible precisely when it is most
+  // interesting.
+  const validBreaks = breakpoints(horizon, log.map((f) => f.validFrom))
+  const systemBreaks = breakpoints(horizon, log.map((f) => f.systemTime))
   return buildRects(validBreaks, systemBreaks, (i, j) => {
     const valid = validBreaks[i]!
     const system = systemBreaks[j]!

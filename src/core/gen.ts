@@ -13,7 +13,7 @@ export function rng(seed: number): () => number {
   }
 }
 
-const MANAGERS = ['Jim', 'Rob', 'Dana', 'Erin', 'Sam']
+const MANAGERS = ['Jim', 'Rob', 'Dana']
 
 /**
  * A random but legal history: valid times scattered freely across the horizon,

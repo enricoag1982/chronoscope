@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { day } from './dates'
 import { criticalPoints, generateLog } from './gen'
-import { HORIZON, SCENARIO } from './log'
+import { HORIZON, SCENARIO, makeFact } from './log'
 import { divergenceFor, planeFor, rectAt } from './plane'
 import type { Horizon, Rect } from './plane'
 import { referenceQuery } from './reference'
@@ -164,5 +164,35 @@ describe('divergenceFor', () => {
     const after = rectAt(rects, day(2026, 5, 1), day(2026, 6, 1))
     expect(after).toBeDefined()
     expect(after!.value).toBe('Jim')
+  })
+})
+
+describe('divergence across attributes', () => {
+  /**
+   * Regression: divergenceFor once took its breakpoints from the queried
+   * attribute alone. A strategy can break at another attribute's coordinates —
+   * a snapshot is a whole-entity record — so the salary error that begins at a
+   * manager change went undetected, and the plane drew nothing.
+   */
+  it('finds an error that begins at another attribute\'s valid time', () => {
+    const log: Fact[] = [
+      makeFact('salary', 10, day(2026, 1, 15), day(2026, 1, 15), 'a'),
+      makeFact('manager', 'Jim', day(2026, 1, 15), day(2026, 1, 15), 'b'),
+      makeFact('manager', 'Rob', day(2026, 4, 1), day(2026, 4, 1), 'c'),
+      makeFact('salary', 20, day(2026, 3, 1), day(2026, 6, 10), 'd'),
+    ]
+    // A strategy that is right until 1 April and stale after it, on salary.
+    const stale = (attr: Attr, valid: Day, system: Day) => {
+      const truth = referenceQuery(log, attr, valid, system)
+      if (attr === 'salary' && valid >= day(2026, 4, 1) && system >= day(2026, 6, 10)) return 10
+      return truth
+    }
+    const found = divergenceFor(log, 'salary', HORIZON, stale)
+    expect(found.length).toBeGreaterThan(0)
+    for (const r of found) {
+      expect(r.validFrom).toBeGreaterThanOrEqual(day(2026, 4, 1))
+      expect(r.systemFrom).toBeGreaterThanOrEqual(day(2026, 6, 10))
+      expect(r.value).toBe(10)
+    }
   })
 })
