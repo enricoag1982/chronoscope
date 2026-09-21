@@ -58,3 +58,23 @@ export function inkOn(hex: string): string {
   const lum = (0.299 * r! + 0.587 * g! + 0.114 * b!) / 255
   return lum > 0.6 ? '#1a1a19' : '#ffffff'
 }
+
+/**
+ * Line-series hues for the cost curves, in fixed slot order. Validated on the
+ * adjacent pairlist that line charts use: worst colour-vision-deficient
+ * separation 9.1, worst normal-vision 19.6, both clear. Three of the five sit
+ * below 3:1 against the surface, so the relief rule applies — every line
+ * carries a direct label at its right end and the panel ships a table view.
+ *
+ * Keyed by strategy rather than by position in the current chart, so hiding a
+ * series never repaints the ones that remain.
+ */
+export const SERIES: Record<string, string> = {
+  deltas: '#2a78d6',
+  intervals: '#eb6834',
+  snapshots: '#1baf7a',
+  hybrid: '#eda100',
+  snapshotStale: '#e87ba4',
+}
+
+export const seriesColour = (key: string): string => SERIES[key] ?? '#55534e'

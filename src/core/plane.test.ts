@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { day } from './dates'
 import { criticalPoints, generateLog } from './gen'
 import { HORIZON, SCENARIO, makeFact } from './log'
-import { divergenceFor, planeFor, rectAt } from './plane'
+import { divergenceFor, planeFor, rectAt, sliceAt } from './plane'
 import type { Horizon, Rect } from './plane'
 import { referenceQuery } from './reference'
 import { ATTRS } from './types'
@@ -193,6 +193,44 @@ describe('divergence across attributes', () => {
       expect(r.validFrom).toBeGreaterThanOrEqual(day(2026, 4, 1))
       expect(r.systemFrom).toBeGreaterThanOrEqual(day(2026, 6, 10))
       expect(r.value).toBe(10)
+    }
+  })
+})
+
+describe('slicing the plane at one moment of knowledge', () => {
+  it('tiles valid time with no gaps', () => {
+    const rects = planeFor(SCENARIO, 'salary', HORIZON)
+    for (const system of [day(2026, 2, 1), day(2026, 6, 1), day(2026, 6, 10)]) {
+      const spans = sliceAt(rects, system)
+      expect(spans[0]!.validFrom).toBe(HORIZON.start)
+      expect(spans.at(-1)!.validTo).toBe(HORIZON.end)
+      for (let i = 1; i < spans.length; i++) {
+        expect(spans[i]!.validFrom).toBe(spans[i - 1]!.validTo)
+      }
+    }
+  })
+
+  it('agrees with the oracle across the slice', () => {
+    const rects = planeFor(SCENARIO, 'salary', HORIZON)
+    for (const system of [day(2026, 3, 1), day(2026, 6, 9), day(2026, 6, 10)]) {
+      for (const span of sliceAt(rects, system)) {
+        expect(span.value).toBe(referenceQuery(SCENARIO, 'salary', span.validFrom, system))
+      }
+    }
+  })
+
+  it('shows the backdated raise appearing the day it is recorded', () => {
+    const rects = planeFor(SCENARIO, 'salary', HORIZON)
+    const before = sliceAt(rects, day(2026, 6, 9)).map((s) => s.value)
+    const after = sliceAt(rects, day(2026, 6, 10)).map((s) => s.value)
+    expect(before).not.toContain(72_000)
+    expect(after).toContain(72_000)
+  })
+
+  it('merges neighbours that carry the same value', () => {
+    const spans = sliceAt(planeFor(SCENARIO, 'salary', HORIZON), day(2026, 6, 10))
+    for (let i = 1; i < spans.length; i++) {
+      expect(spans[i]!.value).not.toBe(spans[i - 1]!.value)
     }
   })
 })

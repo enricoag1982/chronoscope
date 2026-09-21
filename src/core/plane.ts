@@ -151,3 +151,29 @@ export function rectAt(rects: readonly Rect[], valid: Day, system: Day): Rect | 
     (r) => r.validFrom <= valid && valid < r.validTo && r.systemFrom <= system && system < r.systemTo,
   )
 }
+
+/** A horizontal slice: how the value moves across valid time at one moment of knowledge. */
+export type Span = { validFrom: Day; validTo: Day; value: Value | undefined }
+
+/**
+ * The plane's crosshair row on its own. Dragging the system cursor replays
+ * this slice through successive states of knowledge, which is the same story
+ * the full surface tells at a fraction of the space — and along the axis the
+ * reader is already looking at.
+ */
+export function sliceAt(rects: readonly Rect[], system: Day): Span[] {
+  const row = rects
+    .filter((r) => r.systemFrom <= system && system < r.systemTo)
+    .sort((a, b) => a.validFrom - b.validFrom)
+
+  const out: Span[] = []
+  for (const r of row) {
+    const last = out.at(-1)
+    if (last !== undefined && last.value === r.value && last.validTo === r.validFrom) {
+      last.validTo = r.validTo
+    } else {
+      out.push({ validFrom: r.validFrom, validTo: r.validTo, value: r.value })
+    }
+  }
+  return out
+}

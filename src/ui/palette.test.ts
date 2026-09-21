@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CATEGORICAL, NO_VALUE, SEQUENTIAL, coloursFor, inkOn } from './palette'
+import { CATEGORICAL, NO_VALUE, SEQUENTIAL, SERIES, coloursFor, inkOn, seriesColour } from './palette'
 
 describe('categorical colour', () => {
   it('follows the entity, not its rank in the current view', () => {
@@ -56,5 +56,22 @@ describe('absence and legibility', () => {
   it('picks readable ink for both ends of the ramp', () => {
     expect(inkOn(SEQUENTIAL[0]!)).toBe('#1a1a19')
     expect(inkOn(SEQUENTIAL.at(-1)!)).toBe('#ffffff')
+  })
+})
+
+describe('series colour', () => {
+  it('is keyed by strategy, so hiding one never repaints the others', () => {
+    expect(seriesColour('deltas')).toBe(SERIES.deltas)
+    expect(seriesColour('snapshotStale')).toBe(SERIES.snapshotStale)
+  })
+
+  it('covers all five strategies with distinct hues', () => {
+    const keys = ['deltas', 'intervals', 'snapshots', 'hybrid', 'snapshotStale']
+    const used = keys.map(seriesColour)
+    expect(new Set(used).size).toBe(5)
+  })
+
+  it('falls back to ink for an unknown key rather than inventing a hue', () => {
+    expect(Object.values(SERIES)).not.toContain(seriesColour('nope'))
   })
 })
