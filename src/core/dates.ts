@@ -12,19 +12,24 @@ export function toDate(d: Day): Date {
   return new Date(EPOCH + d * MS_PER_DAY)
 }
 
-const SHORT = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric', month: 'short', timeZone: 'UTC',
-})
-const LONG = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
-})
+/**
+ * Fixed rather than Intl, deliberately. Locale data varies by platform and ICU
+ * version — en-GB renders September as "Sept" in some builds and "Sep" in
+ * others — and an explainer that reads differently on the interviewer's machine
+ * than on mine is not worth the convenience.
+ */
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+] as const
 
 /** "15 Jan" — for axes and dense tables. */
 export function formatDay(d: Day): string {
-  return SHORT.format(toDate(d))
+  const t = toDate(d)
+  return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}`
 }
 
 /** "15 Jan 2026" — for headers, where the year earns its space. */
 export function formatDayLong(d: Day): string {
-  return LONG.format(toDate(d))
+  return `${formatDay(d)} ${toDate(d).getUTCFullYear()}`
 }
