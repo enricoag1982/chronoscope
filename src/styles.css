@@ -1,0 +1,95 @@
+:root {
+  /* Light only, by decision. One accent per idea, grey for everything settled. */
+  --bg: #fbfbfa;
+  --panel: #ffffff;
+  --ink: #1a1a19;
+  --ink-soft: #55534e;
+  --ink-faint: #8d8a83;
+  --rule: #e4e2dd;
+  --rule-strong: #cfccc5;
+
+  --retro: #b45309;        /* a fact that reaches backwards */
+  --retro-soft: #fef3e2;
+  --future: #4f46e5;       /* a fact recorded before it takes effect */
+  --future-soft: #eef0fe;
+  --wrong: #be123c;        /* where a strategy disagrees with the oracle */
+  --wrong-soft: #ffe8ec;
+  --ok: #15803d;
+
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --r: 6px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+h1 { font-size: 19px; }
+h2 { font-size: 15px; }
+h3 { font-size: 13px; }
+
+.app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 96px;
+}
+
+.masthead { border-bottom: 1px solid var(--rule); padding-bottom: 18px; margin-bottom: 24px; }
+.masthead p { margin: 8px 0 0; color: var(--ink-soft); max-width: 68ch; }
+
+.band { margin-bottom: 32px; }
+.band > header { margin-bottom: 12px; }
+.band > header p { margin: 4px 0 0; color: var(--ink-faint); font-size: 13px; max-width: 74ch; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 16px;
+}
+
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r);
+  padding: 6px 11px;
+  cursor: pointer;
+}
+button:hover { background: #f5f4f1; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+button.primary:hover { background: #000; }
+
+input[type="range"] { width: 100%; accent-color: var(--ink); }
+input[type="number"], input[type="text"], select {
+  font: inherit; padding: 5px 8px;
+  border: 1px solid var(--rule-strong); border-radius: var(--r);
+  background: var(--panel); color: var(--ink);
+}
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--ink-soft); }
+th, td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--rule); }
+
+.tag {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+}
+.tag.retro  { background: var(--retro-soft);  color: var(--retro); }
+.tag.future { background: var(--future-soft); color: var(--future); }
+.tag.wrong  { background: var(--wrong-soft);  color: var(--wrong); }
