@@ -93,3 +93,9 @@ th, td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--rule); }
 .tag.retro  { background: var(--retro-soft);  color: var(--retro); }
 .tag.future { background: var(--future-soft); color: var(--future); }
 .tag.wrong  { background: var(--wrong-soft);  color: var(--wrong); }
+
+.planes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 14px;
+}

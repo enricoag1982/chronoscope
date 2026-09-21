@@ -1,38 +1,33 @@
-import { useMemo, useReducer, useState } from 'react'
-import { formatDayLong } from '../core/dates'
+import { useMemo, useReducer } from 'react'
 import { HORIZON } from '../core/log'
 import { divergenceFor, planeFor } from '../core/plane'
-import { referenceQuery } from '../core/reference'
 import { materialize } from '../core/strategies/index'
 import { INCORRECT_STRATEGIES } from '../core/strategies/registry'
 import { ATTRS } from '../core/types'
 import type { Attr } from '../core/types'
 import { initialState, reducer } from '../state'
 import { BitemporalPlane } from './BitemporalPlane'
-import { Cursors } from './Cursors'
+import { Readout } from './Readout'
 import { TwinTimelines } from './TwinTimelines'
 import { coloursFor } from './palette'
 
 export function App() {
   const [state, dispatch] = useReducer(reducer, undefined, initialState)
-  const [attr, setAttr] = useState<Attr>('salary')
   const { log, validCursor, systemCursor, clock, snapshotInterval } = state
 
-  const colours = useMemo(
-    () => coloursFor(log.filter((f) => f.attr === attr).map((f) => f.value)),
-    [log, attr],
-  )
-
-  const rects = useMemo(() => planeFor(log, attr, HORIZON), [log, attr])
-
   // The wrong region is drawn from the incorrect strategy itself, not asserted.
-  const divergence = useMemo(() => {
+  const planes = useMemo(() => {
     const stale = INCORRECT_STRATEGIES[0]!
     const { state: s } = materialize(stale, log, { snapshotInterval })
-    return divergenceFor(log, attr, HORIZON, (a, v, sys) => stale.query(s, a, v, sys))
-  }, [log, attr, snapshotInterval])
+    return ATTRS.map((attr: Attr) => ({
+      attr,
+      rects: planeFor(log, attr, HORIZON),
+      divergence: divergenceFor(log, attr, HORIZON, (a, v, sys) => stale.query(s, a, v, sys)),
+      colours: coloursFor(log.filter((f) => f.attr === attr).map((f) => f.value)),
+    }))
+  }, [log, snapshotInterval])
 
-  const truth = referenceQuery(log, attr, validCursor, systemCursor)
+  const wrongAnywhere = planes.some((p) => p.divergence.length > 0)
 
   return (
     <div className="app">
@@ -50,62 +45,48 @@ export function App() {
         <header>
           <h2>Logical history</h2>
           <p>
-            Every answer here needs two coordinates. Not “salary was 60,000”, but
-            “salary was 60,000 on 1 May, as far as we knew on 1 June”.
+            Every answer needs two coordinates. Not “salary was 60,000”, but “salary
+            was 60,000 on 1 May, as far as we knew on 1 June”. Drag either axis.
           </p>
         </header>
 
         <div style={{ display: 'grid', gap: 14 }}>
-          <Cursors
-            horizon={HORIZON} validCursor={validCursor} systemCursor={systemCursor}
-            clock={clock}
-            onValid={(d) => dispatch({ type: 'setValidCursor', day: d })}
-            onSystem={(d) => dispatch({ type: 'setSystemCursor', day: d })}
-          />
-
-          <div className="panel" style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>{attr}</div>
-              <div className="num" style={{ fontSize: 30, fontWeight: 600, lineHeight: 1.1 }}>
-                {truth === undefined ? '—'
-                  : typeof truth === 'number' ? truth.toLocaleString('en-GB') : truth}
-              </div>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--ink-soft)' }}>
-              valid {formatDayLong(validCursor)}
-              <br />
-              as recorded on {formatDayLong(systemCursor)}
-            </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-              {ATTRS.map((a) => (
-                <button key={a} className={a === attr ? 'primary' : ''}
-                        onClick={() => setAttr(a)}>{a}</button>
-              ))}
-            </div>
-          </div>
+          <Readout log={log} validCursor={validCursor} systemCursor={systemCursor} />
 
           <div className="panel">
-            <TwinTimelines log={log} horizon={HORIZON}
-                           validCursor={validCursor} systemCursor={systemCursor} />
+            <TwinTimelines
+              log={log} horizon={HORIZON} clock={clock}
+              validCursor={validCursor} systemCursor={systemCursor}
+              onValid={(d) => dispatch({ type: 'setValidCursor', day: d })}
+              onSystem={(d) => dispatch({ type: 'setSystemCursor', day: d })}
+            />
           </div>
 
-          <div className="panel" style={{ display: 'grid', gap: 10, justifyItems: 'center' }}>
-            <BitemporalPlane
-              attr={attr} rects={rects} divergence={divergence} horizon={HORIZON}
-              validCursor={validCursor} systemCursor={systemCursor} colours={colours}
-              onPick={(v, s) => {
-                dispatch({ type: 'setValidCursor', day: v })
-                dispatch({ type: 'setSystemCursor', day: s })
-              }}
-            />
-            {divergence.length > 0 && (
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-soft)', maxWidth: '62ch' }}>
-                <span className="tag wrong">hatched</span>{' '}
-                where the uninvalidated snapshot strategy disagrees with the truth.
-                Click inside it.
-              </p>
-            )}
+          <div className="planes">
+            {planes.map((p) => (
+              <div className="panel" key={p.attr}>
+                <h3 style={{ marginBottom: 6 }}>{p.attr}</h3>
+                <BitemporalPlane
+                  attr={p.attr} rects={p.rects} divergence={p.divergence}
+                  horizon={HORIZON} validCursor={validCursor} systemCursor={systemCursor}
+                  colours={p.colours}
+                  onPick={(v, s) => {
+                    dispatch({ type: 'setValidCursor', day: v })
+                    dispatch({ type: 'setSystemCursor', day: s })
+                  }}
+                />
+              </div>
+            ))}
           </div>
+
+          {wrongAnywhere && (
+            <p style={{ margin: 0, fontSize: 12.5, color: 'var(--ink-soft)' }}>
+              <span className="tag wrong">hatched</span>{' '}
+              where the uninvalidated snapshot strategy disagrees with the truth. Click
+              inside it — and note it is wrong about salary while manager is untouched,
+              because the stale snapshot was taken when the manager changed.
+            </p>
+          )}
         </div>
       </section>
     </div>

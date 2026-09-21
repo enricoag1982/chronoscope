@@ -29,17 +29,25 @@ describe('the app renders', () => {
     noNaN(markup)
   })
 
-  it('showing a real answer at the opening coordinates', () => {
+  it('showing both attributes at the opening coordinates, not one', () => {
     // 1 May valid, clock at 10 June: the backdated raise is recorded by then.
-    expect(renderToStaticMarkup(<App />)).toContain('72,000')
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup).toContain('72,000')
+    expect(markup).toContain('Rob')
+  })
+
+  it('with a plane per attribute rather than a toggle between them', () => {
+    const markup = renderToStaticMarkup(<App />)
+    expect(markup.match(/valid time →/g)).toHaveLength(2)
   })
 })
 
 describe('the timelines render', () => {
   it('one connector and two dots per fact', () => {
     const markup = renderToStaticMarkup(
-      <TwinTimelines log={SCENARIO} horizon={HORIZON}
-                     validCursor={day(2026, 5, 1)} systemCursor={day(2026, 6, 10)} />,
+      <TwinTimelines log={SCENARIO} horizon={HORIZON} clock={day(2026, 6, 10)}
+                     validCursor={day(2026, 5, 1)} systemCursor={day(2026, 6, 10)}
+                     onValid={() => {}} onSystem={() => {}} />,
     )
     expect(markup.match(/<circle/g)).toHaveLength(SCENARIO.length * 2)
     noNaN(markup)
@@ -47,8 +55,9 @@ describe('the timelines render', () => {
 
   it('survives an empty log', () => {
     noNaN(renderToStaticMarkup(
-      <TwinTimelines log={[]} horizon={HORIZON}
-                     validCursor={HORIZON.start} systemCursor={HORIZON.start} />,
+      <TwinTimelines log={[]} horizon={HORIZON} clock={HORIZON.start}
+                     validCursor={HORIZON.start} systemCursor={HORIZON.start}
+                     onValid={() => {}} onSystem={() => {}} />,
     ))
   })
 })
