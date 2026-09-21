@@ -30,11 +30,31 @@ describe('the app renders', () => {
     expect(markup).toContain('Rob')
   })
 
-  it('with the two axes as the only controls', () => {
+  it('with the cursors driven by the axes, not by a duplicate pair of sliders', () => {
     const markup = renderToStaticMarkup(<App />)
     expect(markup).toContain('valid time')
     expect(markup).toContain('system time')
-    expect(markup).not.toContain('<input')
+    // The axes carry drag zones...
+    expect(markup).toContain('ew-resize')
+    // ...and no slider anywhere sets either cursor. The sandbox's own range
+    // inputs set a fact's valid time and the snapshot interval, which are
+    // different quantities; what must not come back is a second control for
+    // the two numbers the axes already own.
+    expect(markup).not.toMatch(/<input[^>]*aria-label="(valid|system) cursor"/)
+    expect(markup).not.toMatch(/<input[^>]*aria-label="system time"/)
+  })
+
+  it('showing all five representations and the scale band', () => {
+    const markup = renderToStaticMarkup(<App />)
+    for (const s of ['Deltas', 'Intervals', 'Snapshots', 'Hybrid']) {
+      expect(markup).toContain(s)
+    }
+    expect(markup).toContain('Representations')
+    expect(markup).toContain('Scale')
+  })
+
+  it('and stating that the scale figures are modelled rather than measured', () => {
+    expect(renderToStaticMarkup(<App />)).toContain('not measurements')
   })
 })
 

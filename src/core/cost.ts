@@ -224,7 +224,11 @@ const hybridModel: CostModel = {
   notation: {
     storage: 'O(N + H/k·A)',
     read: 'O(A + N·k/H)',
-    append: 'O(1)',
+    // Not O(1): flat in the number of facts, but the scheduled grid snapshot
+    // is A records amortised over a k-day cell. Writing O(1) here would let a
+    // reader skimming the table mistake it for deltas' genuinely constant
+    // append, which is the one comparison this row must not fudge.
+    append: 'O(1 + A/k)',
     retro: 'O(1 + d·H/k·A)',
   },
 }
