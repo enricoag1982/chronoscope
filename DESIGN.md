@@ -1,107 +1,59 @@
 # Design rationale
 
+## The problem
+
+I decided to follow the theme:
+
+> Theme 1: Exploration & Understanding
+> Complex systems, technical concepts, and unfamiliar artifacts are hard to understand through static explanation. Build a tool that helps users develop deep understanding—whether that's a simulation of emergent dynamics, an explainer for a technical concept, or a tool for exploring codebases, datasets, or documents.
+
+In my prototype I wanted to help the reader understand bitemporal modeling.
+
 ## What it is
 
-Bitemporal modeling is a data design approach that gives every fact two
-timestamps: when it became true in the world, and when the system recorded it.
-Facts are recorded rather than overwritten, so the store can answer both "what is
-true?" and "what did we believe, and when?".
+I created a small dynamic page that lets the reader visualize and understand some
+of the challenges of bitemporal modeling.
 
-Tax assessment is the standard example. An authority assesses you on the figures
-as they stood when you filed, not as they stand after later corrections. A store
-with one timestamp cannot reproduce that filing, because the values behind it
-have since changed. The same requirement appears in regulatory reporting, where a
-decision has to be explained against the data held at the time, and in incident
-review, where a bug and bad data are indistinguishable once the data has been
-corrected.
+Bitemporal modeling is a data design approach that records a piece of information
+along two separate time dimensions: when the fact was registered in the system,
+and when the fact happened (or will happen) from a business point of view. Take a
+salary in an HR system: we want our system of record to hold every change to that
+salary, so that it is possible to recalculate taxes at a specific point in time,
+amend errors, and preserve the full history of a fact.
 
-The difficulty is in the primitives rather than the concept. Depending on how
-history is stored, a fact dated in the past can overwrite later changes, a
-materialised view can keep serving a value corrected months ago, and amending an
-entry can mean editing history in place, which removes the audit trail. None of
-these raise an error.
+I found it interesting to build this small example because, even working with an
+AI agent, we managed to introduce a few mistakes in the definition of the storage
+layer and in the interaction with it. Bitemporal modeling has a lot of small
+nuances, and in massively scalable systems, designing it right from the start is
+a big advantage.
 
-Chronoscope stores one small history five ways so those failures can be seen
-rather than described.
+It was also pretty cool to see how fast it is to set up a TypeScript page running
+on GitHub Pages.
 
 ## Approach
 
-The obvious build is an explainer. This is the layer above: it assumes the
-two-clock model and asks what it costs to store.
+I drew on my own experience and researched online to gather some key points to
+start the conversation, and worked heavily with an agent to get the best set of
+concepts in before touching any code.
 
-- **Every representation derives from one fact log.** `materialize` folds `apply`
-  over an empty state, so the batch and incremental paths cannot drift, and the
-  operation counts on screen are the ones a real write would pay.
-- **Correctness comes from an oracle.** `core/reference.ts` is a deliberately
-  slow, obviously correct scan. Every strategy is judged against it, nothing else.
-- **One strategy is wrong, and is a peer.** Same interface, same materialization,
-  same rendering; nothing special-cases it. It is the snapshot strategy missing
-  its invalidation step, so a snapshot taken at a manager change keeps a salary a
-  later retroactive fact should have replaced. The page establishes that by
-  running it, not by captioning it.
+After that I worked with an agent to plan the overall work and discuss tradeoffs
+in terms of the breadth of the example: whether to add real storage, whether to
+support future-dated cases, which language and deployable runtime to use, and so
+on.
 
-## Decisions and tradeoffs
+Once we had a good plan, I set up the agent to do most of the work autonomously,
+creating a strong iteration loop in which a coordinator used sub-agents to work
+on the separate parts.
 
-**The sweep is exhaustive, not sampled.** The value surface is piecewise constant
-and changes only at recorded coordinates, so evaluating every breakpoint and its
-neighbours visits every region. 374 tests in under two seconds, over the scenario
-and generated histories.
+We then iterated on it to find small bugs and improvements, reusing those
+sub-agents and their context to apply corrections quickly.
 
-**Events store absolute assignments, not differences.** A difference only encodes
-numeric attributes, and `manager` is a string. It would also make each event
-depend on every earlier one, so a retroactive insert would change what all of
-them mean — the same failure class as the uninvalidated snapshot.
+## Result
 
-**System time has no input control.** The `addFact` action has no `systemTime`
-field; the reducer stamps the clock. An illegal value is unexpressible rather
-than validated. Valid time stays free in both directions, because retroactive and
-pre-announced facts are the subject.
+The result is a relatively simple page that lets you visualize facts on a
+timeline and create new ones, in order to see interactively how each storage
+approach handles that piece of information.
 
-**The snapshot grid counts events, not days.** A calendar grid stops meaning
-anything at scale. Counting events makes it grow with the history it indexes.
-
-## What changed during the build
-
-**The cost model contradicted the code.** It charged intervals `O(d·N)` for a
-retroactive write. Measured, it is constant — three operations at eight facts,
-three at thirty-two — because open-ended facts always land inside one row and are
-clipped at the next boundary. `core/costClaims.test.ts` now compares every
-modelled measure's growth against operations the code performs.
-
-**Changing the grid changed an answer.** Moving hybrid from days to events made
-its retroactive cost scale with N, where the calendar version was flat. The guard
-test caught it.
-
-**A render test caught a geometry bug.** The divergence calculation took
-breakpoints from the queried attribute alone — true for the oracle, false for a
-strategy, since a snapshot is a whole-entity record. The wrong region rendered
-empty in exactly the case the tool exists to show.
-
-**The clock destroyed an audit row.** It started on the last recording's system
-time, so the first user-added fact closed an open interval row with a zero-width
-system range: unreadable, therefore dropped.
-
-**The interface lost more than it gained.** A two-dimensional heat map was built,
-deployed and removed. Two cursor sliders became the timeline axes themselves.
-
-## Known limits
-
-- **The scale panel is modelled, not measured.** The guard test keeps its growth
-  honest against the implementation; the constants are reasoned, not benchmarked.
-- **Facts are open-ended** — `validFrom` with no `validTo`. This is why interval
-  writes are constant here, and it understates their cost where a correction
-  spans an explicit range.
-- **Day granularity** lets two same-day recordings produce a zero-width system
-  range no query can observe. Finer transaction timestamps avoid this.
-- **One entity, two attributes.** Enough for whole-entity snapshot staleness, not
-  for partitioning or cross-entity queries.
-
-## Running it
-
-```
-npm install
-npm test        # 374 tests
-npm run dev
-```
-
-Deployed to GitHub Pages on push to main, gated on the suite.
+For each storage approach you can see a short explanation of the pros and cons,
+and at the bottom a small representation of how well each approach scales with
+the number of data points.

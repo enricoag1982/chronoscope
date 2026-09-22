@@ -65,6 +65,12 @@ npm run build
 
 Deploys to GitHub Pages on push to main, gated on the test suite.
 
+## Build transcripts
+
+[transcripts/](transcripts/) holds the complete record of how this was built with
+an agent, including the mistakes. Readable renderings in `session-1.md` and
+`session-2.md`, raw logs alongside them.
+
 ## Design notes
 
 [DESIGN.md](DESIGN.md) covers the approach, the key decisions and their
