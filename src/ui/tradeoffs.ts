@@ -11,7 +11,7 @@ export type Tradeoff = { for: string[]; against: string[] }
 export const TRADEOFFS: Record<string, Tradeoff> = {
   deltas: {
     for: [
-      'Facts are immutable. Nothing is ever edited or deleted, so the store is already the audit record — replayable, replicable, and reviewable without a second system.',
+      'Facts are immutable. Nothing is edited or deleted, so the store is itself the audit record: replayable, replicable, and reviewable without a second system.',
       'Writes are always one record, and a correction costs exactly what an ordinary fact costs.',
     ],
     against: [
@@ -26,7 +26,7 @@ export const TRADEOFFS: Record<string, Tradeoff> = {
     ],
     against: [
       'One write touches several rows — closing and reopening neighbours rather than appending.',
-      'Clipping a retroactive fact wrongly lets it swallow every later change, silently.',
+      'A retroactive fact clipped incorrectly overwrites every later change, without error.',
     ],
   },
   snapshots: {
@@ -52,12 +52,12 @@ export const TRADEOFFS: Record<string, Tradeoff> = {
   },
   snapshotStale: {
     for: [
-      'The cheapest writes here, because nothing downstream is touched. This is exactly why it gets shipped.',
+      'The cheapest writes here: nothing downstream is touched, and no bookkeeping is needed to find what to rebuild.',
     ],
     against: [
       'It is wrong. Snapshots written before a retroactive fact keep values that fact should have replaced.',
-      'The failure is silent: no exception, no error log, just an old number returned confidently, forever.',
-      'The underlying log is still correct, which makes it worse — the data is fine and the answers are not, so the bug survives every check that looks at storage.',
+      'Nothing raises an error. The read succeeds and returns the superseded value.',
+      'The underlying log remains correct, so any check that inspects stored facts passes while the answers stay wrong.',
     ],
   },
 }

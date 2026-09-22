@@ -8,14 +8,15 @@ Bitemporal modeling gives every fact two timestamps — when it became true in t
 world, and when the system found out. Facts are recorded rather than overwritten,
 so the store can answer both "what is true?" and "what did we believe, and when?".
 
-The idea is simple; the primitives are not. Pick the wrong ones and a fact dated
-in the past silently swallows every later change, or a cached view keeps serving
-a value corrected months ago, or amending an entry means editing history in place
-— at which point the audit trail you built it all for is gone. These failures are
-quiet. Nothing throws.
+The difficulty is in the primitives rather than the concept. Depending on how
+history is stored, a fact dated in the past can overwrite later changes, a
+materialised view can keep serving a value that was corrected months ago, and
+amending an entry can mean editing history in place, which removes the audit
+trail. None of these raise an error.
 
-Chronoscope stores one small history five ways and lets you drop facts into the
-past to see what each representation costs, and which one gets it wrong.
+Chronoscope stores one small history five ways and lets you add facts dated in
+the past to compare what each representation costs and which one returns the
+wrong answer.
 
 ## The five representations
 
@@ -29,9 +30,9 @@ past to see what each representation costs, and which one gets it wrong.
 
 The fifth is a deliberately incorrect peer of the others: same interface, same
 materialisation, same rendering. It skips invalidation, so a snapshot taken
-before a retroactive fact keeps a value that fact should have replaced, and it
-answers confidently and wrongly forever after. The tool demonstrates the failure
-rather than describing it.
+before a retroactive fact keeps a value that fact should have replaced, and every
+later read returns the superseded value. The tool runs the strategy and shows
+where it diverges rather than describing the failure.
 
 ## How correctness is established
 

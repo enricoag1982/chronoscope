@@ -22,29 +22,30 @@ export function App() {
         <div className="intro">
           <p>
             Bitemporal modeling is a data design approach that gives every fact two
-            timestamps: when it became true in the world, and when the system found
-            out. Facts are recorded rather than overwritten, so the store can answer
-            both “what is true?” and “what did we believe, and when?”.
+            timestamps: when it became true in the world, and when the system
+            recorded it. Facts are recorded rather than overwritten, so the store can
+            answer both “what is true?” and “what did we believe, and when?”.
           </p>
           <p>
-            Take tax. An authority assesses you on the figures as they stood when you
-            filed — not as they stand today, after three corrections. With one
-            timestamp you cannot reproduce that filing, because the numbers behind it
-            have quietly moved. The same shape turns up everywhere: a regulator asking
-            why a transaction was approved last quarter, or an incident review trying
-            to separate a bug from bad data that has since been fixed underneath it.
+            Tax assessment is the standard example. An authority assesses you on the
+            figures as they stood when you filed, not as they stand after later
+            corrections. A store with one timestamp cannot reproduce that filing,
+            because the values behind it have since changed. The same requirement
+            appears in regulatory reporting, where a decision has to be explained
+            against the data held at the time, and in incident review, where a bug and
+            bad data are indistinguishable once the data has been corrected.
           </p>
           <p>
-            The idea is simple; the primitives are not. Pick the wrong ones and a fact
-            dated in the past silently swallows every later change, or a cached view
-            keeps serving a value that was corrected months ago, or amending an entry
-            means editing history in place — at which point the audit trail you built
-            all this for is gone. These failures are quiet. Nothing throws.
+            The difficulty is in the primitives rather than the concept. Depending on
+            how history is stored, a fact dated in the past can overwrite later
+            changes, a materialised view can keep serving a value that was corrected
+            months ago, and amending an entry can mean editing history in place, which
+            removes the audit trail. None of these raise an error.
           </p>
           <p>
-            So this page makes them visible. One small history is stored five ways
-            below. Drag the two clocks, drop facts into the past, and watch what each
-            representation costs — and which one gets it wrong.
+            This page stores one small history five ways. Drag the two clocks, add
+            facts dated in the past, and compare what each representation costs and
+            which one returns the wrong answer.
           </p>
         </div>
       </header>
@@ -53,11 +54,10 @@ export function App() {
         <header>
           <h2>Logical history</h2>
           <p>
-            One timestamp answers “what was the salary on 1 May?”. Two are needed
-            for “what would we have said on 1 June?” — and that second question is
-            what audits, payroll restatements, regulatory reporting and most
-            interesting bug reports are made of. Drag the upper axis to move through
-            history; drag the lower one to move through what we knew.
+            One timestamp answers “what was the salary on 1 May?”. Two are needed for
+            “what would we have said on 1 June?”, which is the question audits,
+            payroll restatements and regulatory reporting ask. Drag the upper axis to
+            move through history; drag the lower one to move through what was known.
           </p>
         </header>
 
@@ -79,15 +79,14 @@ export function App() {
         <header>
           <h2>Representations</h2>
           <p>
-            All five hold the same logical history, and if facts only ever arrived
-            in order they would be hard to tell apart. Add one retroactive fact and
-            they stop agreeing about cost — and one stops agreeing about the answer.
-            Only hybrid has a knob; the others have no parameter to tune, which is
-            itself part of what distinguishes them. This is where a design that
-            never expected late facts turns painful:
-            corrections stop being writes and become rebuilds, deleting a fact means
-            deciding whether it was wrong or merely superseded, and a snapshot
-            somebody forgot to invalidate quietly reverts a value forever.
+            All five hold the same logical history and are hard to tell apart while
+            facts arrive in order. Add one retroactive fact and they diverge on cost,
+            and one diverges on the answer. Only hybrid takes a parameter; the other
+            four have nothing to tune. This is also where a design that did not
+            anticipate late facts becomes expensive: corrections become rebuilds
+            rather than writes, deleting a fact requires deciding whether it was wrong
+            or merely superseded, and an uninvalidated snapshot keeps returning a
+            superseded value indefinitely.
           </p>
         </header>
 
@@ -118,9 +117,9 @@ export function App() {
         <header>
           <h2>Scale</h2>
           <p>
-            Four facts hide all of this — every strategy looks fine on a toy history.
-            These are the shapes each choice takes as history grows into the
-            thousands, and where the bill for a retroactive write actually lands.
+            Every strategy performs acceptably on four facts. These are the shapes
+            each choice takes as history grows into the thousands, and where the cost
+            of a retroactive write lands.
           </p>
         </header>
         <CostPanel snapshotInterval={snapshotInterval} />
