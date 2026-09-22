@@ -17,7 +17,7 @@ export type Action =
   | { type: 'advanceClock'; days: number }
   | { type: 'setValidCursor'; day: Day }
   | { type: 'setSystemCursor'; day: Day }
-  | { type: 'setSnapshotInterval'; days: number }
+  | { type: 'setSnapshotInterval'; every: number }
   | { type: 'undo' }
   | { type: 'reset' }
 
@@ -62,7 +62,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, systemCursor: clamp(action.day) }
 
     case 'setSnapshotInterval':
-      return { ...state, snapshotInterval: Math.max(1, Math.round(action.days)) }
+      return { ...state, snapshotInterval: Math.max(1, Math.round(action.every)) }
 
     case 'undo': {
       if (state.log.length === 0) return state

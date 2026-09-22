@@ -70,15 +70,16 @@ describe('IntervalRows', () => {
     const before = materialize(strategy, SCENARIO.slice(0, -1), DEFAULT_CONFIG).state
     const after = materialize(strategy, SCENARIO, DEFAULT_CONFIG).state
 
+    // Counted as table rows: the renderer draws a bitemporal table with
+    // half-open ranges, not bars. What matters either way is that the
+    // retroactive fact ADDS rows — a closed row stays queryable at an earlier
+    // system time, so nothing may be rewritten in place.
     const props = { horizon: HORIZON, validCursor: VALID, systemCursor: SYSTEM }
-    const beforeCount = (
-      renderToStaticMarkup(<>{renderInternals('intervals', before, props)}</>).match(/<rect/g) ?? []
-    ).length
-    const afterCount = (
-      renderToStaticMarkup(<>{renderInternals('intervals', after, props)}</>).match(/<rect/g) ?? []
+    const rows = (state: unknown) => (
+      renderToStaticMarkup(<>{renderInternals('intervals', state, props)}</>).match(/<tr/g) ?? []
     ).length
 
-    expect(afterCount).toBeGreaterThan(beforeCount)
+    expect(rows(after)).toBeGreaterThan(rows(before))
   })
 })
 

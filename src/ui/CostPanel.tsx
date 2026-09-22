@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { CostParams } from '../core/cost'
 import { COST_MODELS, costCurve } from '../core/cost'
-import { HORIZON } from '../core/log'
 import { STRATEGIES } from '../core/strategies/registry'
 import { ATTRS } from '../core/types'
 import { seriesColour } from './palette'
@@ -33,7 +32,6 @@ const PAD_T = 10
 const PAD_B = 20
 
 const ATTRS_COUNT = ATTRS.length
-const HORIZON_DAYS = HORIZON.end - HORIZON.start
 
 function formatTick(n: number): string {
   if (n === 0) return '0'
@@ -84,7 +82,6 @@ export function CostPanel({ snapshotInterval }: Props) {
   const base: CostParams = {
     facts: 0,
     attrs: ATTRS_COUNT,
-    horizonDays: HORIZON_DAYS,
     snapshotInterval: k,
     retroDepth,
   }
@@ -160,17 +157,17 @@ export function CostPanel({ snapshotInterval }: Props) {
 
       <div style={{ display: 'flex', gap: 24, marginTop: 16, flexWrap: 'wrap' }}>
         <label style={{ flex: '1 1 220px', fontSize: 12, color: 'var(--ink-soft)' }}>
-          snapshot interval k <span className="num">{k}d</span>
+          snapshot interval k <span className="num">every {k} events</span>
           <input
-            type="range" min={1} max={365} value={k}
+            type="range" min={1} max={500} value={k}
             onChange={(e) => setK(Number(e.target.value))}
           />
         </label>
         <label style={{ flex: '1 1 220px', fontSize: 12, color: 'var(--ink-soft)' }}>
-          retroactive depth d <span className="num">{retroDepth.toFixed(2)}</span>
+          retroactive depth d <span className="num">{Math.round(retroDepth * 100)}%</span>
           <input
-            type="range" min={0} max={1} step={0.01} value={retroDepth}
-            onChange={(e) => setRetroDepth(Number(e.target.value))}
+            type="range" min={0} max={100} step={1} value={Math.round(retroDepth * 100)}
+            onChange={(e) => setRetroDepth(Number(e.target.value) / 100)}
           />
         </label>
       </div>

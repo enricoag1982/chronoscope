@@ -1,4 +1,3 @@
-import { HORIZON } from '../log'
 import { referenceState } from '../reference'
 import { INF } from '../types'
 import type { Attr, Day, Fact, Value } from '../types'
@@ -8,9 +7,32 @@ import type { Snapshot } from './snapshots'
 
 export type HybridState = { log: Fact[]; snapshots: Snapshot[]; seq: number }
 
-function gridPoints(cfg: Config): Day[] {
+/**
+ * Grid points: sort the distinct validFrom values present in the log, then
+ * take the k-th, 2k-th, 3k-th, ... one (1-indexed), where k = cfg.snapshotInterval.
+ *
+ * `Config.snapshotInterval` keeps its historic name (`Config` lives in
+ * strategies/index.ts, which this strategy does not own) but its unit has
+ * changed: it now counts EVENTS — distinct valid-time points seen in the log
+ * — not calendar days. A grid pinned to calendar days over a fixed horizon
+ * stops meaning anything once the history has, say, 10,000 facts packed into
+ * that same horizon: the grid never gets any denser, so replay windows grow
+ * without bound while storage stays flat. An event grid grows with the
+ * history instead, which is what real systems that "snapshot every k events"
+ * actually do.
+ *
+ * If the log has fewer than k distinct valid times, the grid is empty — see
+ * query()/readCost() below, which already treat "no live snapshot found" as
+ * "replay the whole log from the beginning" (`snap?.validAt ?? -Infinity`).
+ * So correctness never depends on the grid being non-empty; an empty grid
+ * just means every read pays a full replay, same as it would for any other
+ * strategy with no cached state at all.
+ */
+function gridPoints(log: readonly Fact[], cfg: Config): Day[] {
+  const distinct = [...new Set(log.map((f) => f.validFrom))].sort((a, b) => a - b)
+  const k = cfg.snapshotInterval
   const points: Day[] = []
-  for (let p = HORIZON.start; p <= HORIZON.end; p += cfg.snapshotInterval) points.push(p)
+  for (let i = k - 1; i < distinct.length; i += k) points.push(distinct[i]!)
   return points
 }
 
@@ -24,17 +46,29 @@ function replay(
 }
 
 /**
- * Snapshots.ts with the grid fixed instead of data-driven: one snapshot every
- * cfg.snapshotInterval days across the horizon, plus the full log. Fewer cached
- * points, so a retroactive fact invalidates and rebuilds fewer records than
- * snapshots.ts does — cheaper storage, cheaper writes. The price comes back on
- * read as a bounded replay from the nearest grid point at or before `valid`,
+ * Snapshots.ts with the grid strided instead of data-driven for every point:
+ * one snapshot every cfg.snapshotInterval distinct valid times seen so far
+ * (see gridPoints above), plus the full log. Fewer cached points than
+ * snapshots.ts, so a retroactive fact invalidates and rebuilds fewer records
+ * — cheaper storage, cheaper writes. The price comes back on read as a
+ * bounded replay from the nearest live grid point at or before `valid`,
  * instead of a direct hit.
+ *
+ * The grid is recomputed from the up-to-date log on every apply(), the same
+ * way snapshots.ts recomputes its (unstrided) point set from the log. This
+ * keeps the invariant simple: on each fact, close every live snapshot whose
+ * validAt is at or after the fact's validFrom (it may now be wrong), then
+ * write fresh snapshots for whatever the *current* grid says the points at
+ * or after that validFrom are. Because inserting one new distinct valid time
+ * never changes the sort position of any distinct time before it, every
+ * grid point strictly before the new fact's validFrom keeps the same index
+ * it always had — so points left untouched here are still correct, and nothing
+ * before the fact's validFrom needs revisiting.
  */
 export const hybrid: Strategy<HybridState> = {
   key: 'hybrid',
   name: 'Hybrid',
-  blurb: 'Snapshots on a fixed grid, plus the log. Bounded replay on read.',
+  blurb: 'Snapshots on an event grid (every k valid times), plus the log. Bounded replay on read.',
   correct: true,
 
   empty: () => ({ log: [], snapshots: [], seq: 0 }),
@@ -56,7 +90,7 @@ export const hybrid: Strategy<HybridState> = {
       if (s.systemFrom < t) kept.push({ ...s, systemTo: t })
     }
 
-    const points = gridPoints(cfg).filter((p) => p >= v)
+    const points = gridPoints(log, cfg).filter((p) => p >= v)
     let written = 0
     for (const p of points) {
       kept.push({

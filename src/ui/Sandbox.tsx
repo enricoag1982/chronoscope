@@ -5,12 +5,6 @@ import { ATTRS } from '../core/types'
 import type { Attr, Value } from '../core/types'
 import type { Action, AppState } from '../state'
 
-const CLOCK_STEPS = [
-  { label: '+1d', days: 1 },
-  { label: '+1w', days: 7 },
-  { label: '+1mo', days: 30 },
-] as const
-
 /**
  * The scenario is a starting point, not a fence: this is where a fact gets
  * written by hand.
@@ -69,15 +63,9 @@ export function Sandbox({ state, dispatch }: { state: AppState; dispatch: (a: Ac
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>clock</span>
-        {CLOCK_STEPS.map(({ label, days }) => (
-          <button key={label} onClick={() => dispatch({ type: 'advanceClock', days })}>{label}</button>
-        ))}
-
-        <span style={{ fontSize: 12, color: 'var(--ink-faint)', marginLeft: 14 }}>snapshot interval</span>
-        <input type="range" min={1} max={90} value={state.snapshotInterval} style={{ width: 120 }}
-               aria-label="snapshot interval"
-               onChange={(e) => dispatch({ type: 'setSnapshotInterval', days: Number(e.target.value) })} />
-        <span className="num" style={{ fontSize: 12 }}>{state.snapshotInterval}d</span>
+        {/* One step. Advancing the clock is how you separate two recordings in
+            system time; how far you advance it changes nothing that matters. */}
+        <button onClick={() => dispatch({ type: 'advanceClock', days: 1 })}>+1 day</button>
 
         <button style={{ marginLeft: 'auto' }} disabled={state.log.length === 0}
                 onClick={() => dispatch({ type: 'undo' })}>

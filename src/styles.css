@@ -99,3 +99,15 @@ th, td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--rule); }
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 14px;
 }
+
+/* Storage on the left, the case for and against it on the right. Collapses to
+   one column when there is not room for both. */
+.rowBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 300px);
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .rowBody { grid-template-columns: minmax(0, 1fr); }
+}

@@ -20,9 +20,7 @@ export type CostParams = {
   facts: number
   /** A — attributes tracked per entity (ATTRS.length in this app, generalised here). */
   attrs: number
-  /** H — length of the modelled horizon, in days. Only the day-grid strategies (hybrid) need a calendar. */
-  horizonDays: number
-  /** k — hybrid's snapshot grid spacing, in days. */
+  /** k — hybrid's snapshot grid spacing, in EVENTS (distinct valid times), not days. */
   snapshotInterval: number
   /** d — how far back a retroactive fact reaches, as a fraction of history already recorded. 0 = touches nothing behind it, 1 = reaches all the way to the start. */
   retroDepth: number
@@ -43,10 +41,10 @@ export type CostModel = {
 }
 
 // Defensive floor for values used as divisors. Callers are expected to pass
-// horizonDays >= 1 and snapshotInterval >= 1 (a zero-length horizon or a
-// zero-day grid is not a representable configuration), but the cost
-// functions themselves must stay finite under a blind parameter sweep, so
-// every division goes through this rather than trusting the caller.
+// snapshotInterval >= 1 (a zero-event grid is not a representable
+// configuration), but the cost functions themselves must stay finite under a
+// blind parameter sweep, so every division goes through this rather than
+// trusting the caller.
 const atLeast1 = (n: number): number => Math.max(n, 1)
 
 // --- deltas ---------------------------------------------------------------
@@ -193,43 +191,56 @@ const snapshotStaleModel: CostModel = {
 
 // --- hybrid -------------------------------------------------------------------
 //
-// Snapshots on a fixed day grid (spacing k = snapshotInterval, over a horizon
-// of H days), plus the full log. Reads take the nearest grid snapshot and
-// replay forward to the query point.
+// Snapshots on an EVENT grid (spacing k = snapshotInterval, in distinct valid
+// times — see strategies/hybrid.ts), plus the full log. Reads take the
+// nearest grid snapshot and replay forward to the query point. The horizon
+// has no part in this model any more: a calendar-day grid stops meaning
+// anything once a fixed horizon holds thousands of facts, which is exactly
+// the bug this file's rewrite exists to fix. Every term below is in N
+// (facts) and k (events per grid cell) only.
 //
-// HYBRID_FACT_DENSITY: the one judgement call here — facts are assumed to
-// arrive roughly uniformly over the horizon, so a k-day replay window holds
-// on average (facts / H) * k facts. A bursty log would make some windows
-// longer and others shorter; uniform density is the honest "no better
-// information" baseline the product brief's sliders are built to explore.
+// HYBRID_DISTINCT_TIMES ≈ facts: the same judgement call snapshotsModel makes
+// above (SNAPSHOT_DISTINCT_TIMES) — distinct valid times are approximated by
+// fact count, an upper bound that holds as the common case for this app's
+// per-attribute fact stream. It is what lets "every k distinct valid times"
+// translate directly into "every k facts" below.
 const hybridModel: CostModel = {
   key: 'hybrid',
   // The full log (N records) plus one A-valued snapshot per grid point.
-  // Grid points = H / k, so storage falls as the grid widens — the other
-  // half of the tradeoff read() shows rising.
-  storage: (p) => p.facts + (p.horizonDays / atLeast1(p.snapshotInterval)) * p.attrs,
+  // Grid points = N / k (one every k distinct valid times, approximated by
+  // facts — see above), so storage falls as the grid widens — the other half
+  // of the tradeoff read() shows rising. Growing history now grows the grid
+  // itself, instead of a fixed handful of points pinned to a calendar.
+  storage: (p) => p.facts + (p.facts / atLeast1(p.snapshotInterval)) * p.attrs,
   // Fetch the nearest snapshot (attrs records) then replay the bounded
-  // window back to the query point (average window size below).
-  read: (p) => p.attrs + (p.facts / atLeast1(p.horizonDays)) * p.snapshotInterval,
+  // window back to the query point. Between two consecutive grid points sit
+  // k distinct valid times ≈ k facts (same density approximation), so the
+  // replay window is ~k facts — not the old (N/H)*k, which mixed an event
+  // count with a calendar span that had nothing to do with how many facts
+  // actually landed in it.
+  read: (p) => p.attrs + p.snapshotInterval,
   // Appending to the log is O(1); the periodic grid snapshot is a scheduled
   // O(attrs) event amortised over the facts that occur inside one grid cell,
-  // not a cost paid by any single fact.
+  // not a cost paid by any single fact. Already horizon-free before this
+  // rewrite — a grid cell is k events whether or not there is a calendar in
+  // the picture — so this formula is unchanged.
   append: (p) => 1 + p.attrs / atLeast1(p.snapshotInterval),
   // A retroactive fact is appended to the log (O(1)) and invalidates the
   // grid snapshots at or after its valid time — far fewer of them than plain
   // snapshots pays, because the grid is coarser than the fact stream by a
-  // factor of k. Affected grid points ~ retroDepth * H / k, each rebuilt in
-  // full (attrs records).
-  retro: (p) => 1 + p.retroDepth * (p.horizonDays / atLeast1(p.snapshotInterval)) * p.attrs,
+  // factor of k. Affected grid points ~ retroDepth * N / k (not H / k: the
+  // grid this strategy actually rebuilds is sized by how many facts have
+  // landed, not by the calendar), each rebuilt in full (attrs records).
+  retro: (p) => 1 + p.retroDepth * (p.facts / atLeast1(p.snapshotInterval)) * p.attrs,
   notation: {
-    storage: 'O(N + H/k·A)',
-    read: 'O(A + N·k/H)',
+    storage: 'O(N + N/k·A)',
+    read: 'O(A + k)',
     // Not O(1): flat in the number of facts, but the scheduled grid snapshot
-    // is A records amortised over a k-day cell. Writing O(1) here would let a
-    // reader skimming the table mistake it for deltas' genuinely constant
+    // is A records amortised over a k-event cell. Writing O(1) here would let
+    // a reader skimming the table mistake it for deltas' genuinely constant
     // append, which is the one comparison this row must not fudge.
     append: 'O(1 + A/k)',
-    retro: 'O(1 + d·H/k·A)',
+    retro: 'O(1 + d·N/k·A)',
   },
 }
 

@@ -21,11 +21,21 @@ export function addOps(a: OpCounts, b: OpCounts): OpCounts {
 }
 
 export type Config = {
-  /** Grid spacing in days for strategies that snapshot on a schedule. */
+  /**
+   * How many events between snapshots, for strategies that snapshot on a
+   * schedule. Counted in events rather than days: a grid pinned to a calendar
+   * stops meaning anything once history is large, while an event grid grows
+   * with the history it indexes.
+   *
+   * The default is small because the shipped scenario holds only three distinct
+   * valid times. A larger default would leave hybrid with no grid points at
+   * all, silently degenerating it into plain replay and making its one knob
+   * look inert.
+   */
   snapshotInterval: number
 }
 
-export const DEFAULT_CONFIG: Config = { snapshotInterval: 30 }
+export const DEFAULT_CONFIG: Config = { snapshotInterval: 2 }
 
 export type Applied<S> = { state: S; ops: OpCounts }
 

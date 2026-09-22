@@ -13,7 +13,6 @@ import type { CostModel, CostParams } from './cost'
 const BASE: CostParams = {
   facts: 1_000,
   attrs: 2,
-  horizonDays: 365,
   snapshotInterval: 30,
   retroDepth: 0.4,
 }
@@ -86,6 +85,19 @@ describe('hybrid: snapshot interval trades storage against read cost', () => {
     expect(storages.at(-1)).toBeLessThan(storages[0]!)
     expect(reads.at(-1)).toBeGreaterThan(reads[0]!)
   })
+
+  it('grid size (storage beyond the raw log) scales with N, the fact count — not a fixed horizon', () => {
+    // storage() = facts + gridPoints * attrs, so subtracting the raw log back
+    // out isolates the grid term. With a calendar-day grid this term would be
+    // flat (pinned to horizonDays / k, independent of history size) — that
+    // was the bug the rewrite fixes. With an event grid it must instead grow
+    // roughly linearly in facts, for a fixed snapshotInterval.
+    const gridTerm = (facts: number) => models.hybrid.storage({ ...BASE, facts }) - facts
+
+    const small = gridTerm(1_000)
+    const large = gridTerm(100_000)
+    expect(large).toBeGreaterThan(small * 50)
+  })
 })
 
 describe('retroactive depth: snapshots pays for it, intervals and deltas do not', () => {
@@ -130,10 +142,10 @@ describe('the tempting bug: snapshotStale writes cheaper than correct snapshots'
 describe('every model stays finite and non-negative across a wide parameter sweep', () => {
   const factsValues = [0, 1, 50, 10_000]
   const attrsValues = [1, 2, 8]
-  const horizonDaysValues = [1, 30, 365, 3650]
   const retroDepthValues = [0, 0.3, 1]
-  // snapshotInterval edge cases called out explicitly: 1, and equal to the horizon.
-  const snapshotIntervalOf = (horizonDays: number) => [1, horizonDays]
+  // snapshotInterval edge cases called out explicitly: 1, and equal to (or
+  // exceeding) the fact count, which drives the event grid empty.
+  const snapshotIntervalOf = (facts: number) => [1, Math.max(facts, 1), 500]
 
   const measureNames = ['storage', 'read', 'append', 'retro'] as const
 
@@ -141,19 +153,17 @@ describe('every model stays finite and non-negative across a wide parameter swee
     it(`${key}: finite, non-negative for every combination in the sweep`, () => {
       for (const facts of factsValues) {
         for (const attrs of attrsValues) {
-          for (const horizonDays of horizonDaysValues) {
-            for (const snapshotInterval of snapshotIntervalOf(horizonDays)) {
-              for (const retroDepth of retroDepthValues) {
-                const p: CostParams = { facts, attrs, horizonDays, snapshotInterval, retroDepth }
-                for (const measure of measureNames) {
-                  const value = model[measure](p)
-                  expect(Number.isFinite(value), `${key}.${measure}(${JSON.stringify(p)})`).toBe(
-                    true,
-                  )
-                  expect(value, `${key}.${measure}(${JSON.stringify(p)})`).toBeGreaterThanOrEqual(
-                    0,
-                  )
-                }
+          for (const snapshotInterval of snapshotIntervalOf(facts)) {
+            for (const retroDepth of retroDepthValues) {
+              const p: CostParams = { facts, attrs, snapshotInterval, retroDepth }
+              for (const measure of measureNames) {
+                const value = model[measure](p)
+                expect(Number.isFinite(value), `${key}.${measure}(${JSON.stringify(p)})`).toBe(
+                  true,
+                )
+                expect(value, `${key}.${measure}(${JSON.stringify(p)})`).toBeGreaterThanOrEqual(
+                  0,
+                )
               }
             }
           }

@@ -1,22 +1,28 @@
+import { formatDay } from '../../core/dates'
 import { INF } from '../../core/types'
 import type { Day } from '../../core/types'
 import type { IntervalState } from '../../core/strategies/intervals'
-import { linear } from '../scale'
 import { show } from '../Readout'
 
-const W = 1000
-const ROW_H = 20
-const PAD = 4
+/** A half-open range, written the way a bitemporal table actually reads. */
+function range(from: Day, to: Day): string {
+  return `[${formatDay(from)}, ${to === INF ? '∞' : formatDay(to)})`
+}
 
 /**
- * Every row this strategy has ever stored, drawn as a rectangle on the same
- * valid-time axis the rest of the interface uses. Open rows (still current in
- * system time) render solid; closed rows fade but stay on screen — the audit
- * trail a retroactive write leaves behind, rather than a mutation that erases
- * it. Rows are never deduplicated: one rectangle per stored row.
+ * Every row this strategy has ever stored, as an actual bitemporal table —
+ * attribute, value, valid range, system range — rather than a diagram of one.
+ * Both ranges are half-open and rendered literally as such: [start, end), or
+ * [start, ∞) while still open. That notation is why one row's end can equal
+ * the next row's start without the two overlapping.
+ *
+ * Rows closed in system time (superseded by a later write) render faded but
+ * stay on screen — the audit trail a retroactive write leaves behind, since a
+ * row is never mutated, only closed and replaced. Rows are never
+ * deduplicated: one line per stored row.
  */
 export function IntervalRows({
-  state, horizon,
+  state, horizon: _horizon,
 }: { state: IntervalState; horizon: { start: Day; end: Day } }) {
   const rows = [...state.rows].sort(
     (a, b) => a.attr.localeCompare(b.attr) || a.validFrom - b.validFrom || a.systemFrom - b.systemFrom,
@@ -25,30 +31,37 @@ export function IntervalRows({
     return <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>no rows</div>
   }
 
-  const x = linear([horizon.start, horizon.end], [PAD, W - PAD])
-  const h = rows.length * ROW_H
-
   return (
-    <div style={{ maxHeight: 160, overflowY: 'auto' }}>
-      <svg viewBox={`0 0 ${W} ${h}`} width="100%" style={{ display: 'block' }}>
-        {rows.map((r, i) => {
-          const open = r.systemTo === INF
-          const from = Math.min(Math.max(r.validFrom, horizon.start), horizon.end)
-          const to = Math.min(r.validTo === INF ? horizon.end : r.validTo, horizon.end)
-          const x0 = x(from)
-          const x1 = x(Math.max(from, to))
-          const y = i * ROW_H
-          return (
-            <g key={r.id} opacity={open ? 1 : 0.35}>
-              <rect x={x0} y={y + 3} width={Math.max(1, x1 - x0)} height={ROW_H - 6}
-                    fill="var(--rule-strong)" rx={2} />
-              <text x={x0 + 4} y={y + ROW_H - 7} fontSize={10} fill="var(--ink)">
-                {r.attr}: {show(r.value)}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
+    <div>
+      <div style={{ maxHeight: 160, overflowY: 'auto' }}>
+        <table>
+          <thead>
+            <tr>
+              <th>attribute</th>
+              <th>value</th>
+              <th>valid range</th>
+              <th>system range</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const open = r.systemTo === INF
+              return (
+                <tr key={r.id} style={{ opacity: open ? 1 : 0.4 }}>
+                  <td>{r.attr}</td>
+                  <td className="num">{show(r.value)}</td>
+                  <td className="num">{range(r.validFrom, r.validTo)}</td>
+                  <td className="num">{range(r.systemFrom, r.systemTo)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p style={{ fontSize: 11, color: 'var(--ink-faint)', margin: '6px 0 0' }}>
+        A retroactive write never mutates a row: it closes the old one in system
+        time and opens replacements, so the old belief stays queryable.
+      </p>
     </div>
   )
 }

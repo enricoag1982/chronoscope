@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { COST_MODELS } from './cost'
 import type { CostParams } from './cost'
 import { day } from './dates'
-import { HORIZON, makeFact } from './log'
+import { makeFact } from './log'
 import { DEFAULT_CONFIG, materialize } from './strategies/index'
 import { STRATEGIES } from './strategies/registry'
 import type { Fact } from './types'
@@ -44,7 +44,6 @@ function modelRetro(key: string, n: number): number {
   const p: CostParams = {
     facts: n,
     attrs: 2,
-    horizonDays: HORIZON.end - HORIZON.start,
     snapshotInterval: DEFAULT_CONFIG.snapshotInterval,
     retroDepth: 1,
   }
@@ -68,17 +67,28 @@ describe('the model grows the way the code grows', () => {
     })
   }
 
-  it('and only snapshots actually pays for depth', () => {
+  it('snapshots and hybrid pay for depth; deltas, intervals and snapshotStale do not', () => {
+    // snapshots pays because it invalidates every cached point at or after
+    // the retroactive valid time, and it has one for every distinct valid
+    // time. hybrid now pays too, for the same reason at a coarser grain: its
+    // grid is sized in EVENTS (every k distinct valid times), so the number
+    // of grid points it must invalidate still grows with the history — it is
+    // just smaller than snapshots' by a factor of k. That is new: the old
+    // calendar-day grid was pinned to a fixed horizon, so its retroactive
+    // cost used to be flat in N. deltas and intervals stay flat because their
+    // write paths never depend on how far back a fact reaches (see their
+    // model comments above); snapshotStale stays flat because it skips
+    // invalidation entirely, which is the bug it demonstrates.
     const scaling = STRATEGIES
       .filter((s) => grows(observedRetro(s.key, 8), observedRetro(s.key, 32)))
       .map((s) => s.key)
-    expect(scaling).toEqual(['snapshots'])
+    expect(new Set(scaling)).toEqual(new Set(['snapshots', 'hybrid']))
   })
 })
 
 describe('the notation column matches the functions', () => {
   const base: CostParams = {
-    facts: 100, attrs: 2, horizonDays: 240, snapshotInterval: 30, retroDepth: 0.5,
+    facts: 100, attrs: 2, snapshotInterval: 30, retroDepth: 0.5,
   }
 
   for (const [key, model] of Object.entries(COST_MODELS)) {

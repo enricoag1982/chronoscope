@@ -62,7 +62,7 @@ describe('cursors and config', () => {
   })
 
   it('keeps the snapshot interval at a day or more', () => {
-    const s = reducer(initialState(), { type: 'setSnapshotInterval', days: 0 })
+    const s = reducer(initialState(), { type: 'setSnapshotInterval', every: 0 })
     expect(s.snapshotInterval).toBe(1)
   })
 
