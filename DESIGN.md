@@ -2,13 +2,27 @@
 
 ## What it is
 
-A playground for bitemporal modeling: every fact carries two timestamps, one for
-when it became true in the world and one for when the system recorded it.
+Bitemporal modeling is a data design approach that gives every fact two
+timestamps: when it became true in the world, and when the system recorded it.
+Facts are recorded rather than overwritten, so the store can answer both "what is
+true?" and "what did we believe, and when?".
 
-The concept takes a sentence. Implementing it does not. Once knowledge of the
-past can change, the storage representation stops being an implementation
-detail — events, intervals and snapshots describe the same history and behave
-differently the moment a retroactive fact arrives.
+Tax assessment is the standard example. An authority assesses you on the figures
+as they stood when you filed, not as they stand after later corrections. A store
+with one timestamp cannot reproduce that filing, because the values behind it
+have since changed. The same requirement appears in regulatory reporting, where a
+decision has to be explained against the data held at the time, and in incident
+review, where a bug and bad data are indistinguishable once the data has been
+corrected.
+
+The difficulty is in the primitives rather than the concept. Depending on how
+history is stored, a fact dated in the past can overwrite later changes, a
+materialised view can keep serving a value corrected months ago, and amending an
+entry can mean editing history in place, which removes the audit trail. None of
+these raise an error.
+
+Chronoscope stores one small history five ways so those failures can be seen
+rather than described.
 
 ## Approach
 
