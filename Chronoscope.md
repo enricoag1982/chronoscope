@@ -1,5 +1,17 @@
 # Chronoscope — Exploring Bitemporal Data
 
+I wanted to introduce a small dynamic page that allows the reader to visualize and understand some of the challenges of bitemporal modeling.
+
+Bitemporal modeling is a data design approach that allows to record a piece of information using two separate time dimension: when the fact got registered in the system and when the fact happen (or will happen) from a business point of view. 
+An example is for an HR system a salary, we want our system of record to be able to contain all the various changes in salary so it is possible for example to (re)calculate taxes at a specific point of time, amend errors, and preserve all the state of a fact.
+
+I found interesting to create this small example as even working with an AI agent we managed to introduce few mistakes in the definition of the storage layer and the interaction with them.
+Was also pretty cool to see how fast is to setup a typescript page running on gitHub pages.
+
+The Agent did most of the work creating a strong iteration loop where a coordinator used some agents to work on the sub-parts, and then reused these sub-agents and their context to fast apply corrections.
+
+## The real tool:
+
 Real-world data is rarely static, and changes do not always arrive in chronological order.
 
 Consider an employee record:
@@ -23,10 +35,10 @@ There are multiple ways to represent temporal data, each with different behavior
 
 For example, we could store changes as:
 
-- **Deltas / events** — record only facts that changed and reconstruct state by replaying them.
+- **Event log** — record each fact as it is learned and reconstruct state by replaying them.
 - **Validity intervals** — store facts together with the periods during which they are valid.
 - **Snapshots** — periodically store the complete state of an entity.
-- **Hybrid approaches** — combine authoritative deltas with materialized snapshots or indexes.
+- **Hybrid approaches** — combine an authoritative event log with materialized snapshots or indexes.
 
 These representations can describe the same logical history, but they behave very differently when new information arrives retroactively.
 
@@ -100,7 +112,7 @@ For example:
 ```text
                      Read state     New fact       Historical correction
 
-Events / deltas      Replay         Append         Append + replay
+Event log            Replay         Append         Append + replay
 Intervals            Direct query   Interval edit  Split/rewrite intervals
 Snapshots            Direct query   New snapshot   Invalidate/rebuild
 Hybrid                Short replay  Append         Invalidate + partial replay
