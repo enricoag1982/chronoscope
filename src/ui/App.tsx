@@ -17,27 +17,35 @@ export function App() {
     <div className="app">
       <header className="masthead">
         <h1>Chronoscope</h1>
-        <p>
-          Most systems store one timestamp per fact and quietly assume we learn
-          things the moment they happen. Reality disagrees constantly: a raise is
-          approved in June and effective from March, a correction lands weeks after
-          the mistake, a late invoice arrives against a quarter already closed.
-        </p>
-        <p>
-          With one clock you can always say what is true now. What you cannot do is
-          reproduce what you said last Tuesday — so every report you have already
-          sent becomes unrepeatable, every “why did the system claim that?” becomes
-          unanswerable, and a correction is indistinguishable from someone editing
-          the past.
-        </p>
-        <p>
-          Bitemporal modelling fixes that by keeping two clocks per fact: when it
-          was true, and when we found out. This tool is about what that costs. The
-          same history is stored five ways below — add a fact dated in the past and
-          watch them diverge. Four stay correct and disagree only about the bill.
-          The fifth is the shortcut most systems actually ship, and it starts
-          returning wrong answers that nothing in the logs will point at.
-        </p>
+        <p className="lede">Two clocks per fact, and why one is never enough.</p>
+
+        <div className="intro">
+          <p>
+            Ask a database what someone earned on 1 March and it will tell you. Ask
+            what it <em>would have told you</em> on 1 March, and most systems cannot
+            answer — they overwrote that the moment a correction arrived.
+          </p>
+          <p>
+            That second question is not academic. A tax authority assesses you on the
+            figures as they stood when you filed, not as they stand today. A regulator
+            asks why a transaction was approved last quarter, and the only honest reply
+            replays the data you actually held then. An incident review asks whether an
+            outage was caused by a bug or by bad data — and you cannot tell, if the data
+            has since been corrected underneath you.
+          </p>
+          <p>
+            Bitemporal modelling answers all three by giving every fact two timestamps:
+            when it became true in the world, and when your system found out. Nothing is
+            overwritten. “What is true now” and “what did we believe then” stop being
+            different problems and become the same query at different coordinates.
+          </p>
+          <p>
+            The power is real and so is the bill. This page stores one small history five
+            ways and lets you drop a fact into the past to see what each one pays. Four
+            stay correct and disagree only about cost. The fifth is the shortcut most
+            systems reach for, and it answers confidently and wrongly.
+          </p>
+        </div>
       </header>
 
       <section className="band">

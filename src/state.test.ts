@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { day } from './core/dates'
 import { HORIZON, latestSystemTime } from './core/log'
+import { DEFAULT_CONFIG as cfg, materialize } from './core/strategies/index'
+import { STRATEGIES } from './core/strategies/registry'
 import { initialState, reducer } from './state'
 import type { AppState } from './state'
 
@@ -76,5 +78,32 @@ describe('cursors and config', () => {
       { type: 'addFact', attr: 'salary', value: 1, validFrom: HORIZON.start },
       { type: 'reset' })
     expect(s).toEqual(initialState())
+  })
+})
+
+describe('adding a fact supersedes stored rows rather than destroying them', () => {
+  /**
+   * Regression: the clock started on the last recording's system time, so the
+   * first fact a reader added closed an already-open interval row with a
+   * zero-width system range. Nothing can ever read such a row, so the store
+   * drops it — and the audit trail lost an entry exactly when a reader was
+   * watching to see one appear.
+   */
+  it('starts the clock after the last recording, not on it', () => {
+    const s = initialState()
+    expect(s.clock).toBeGreaterThan(latestSystemTime(s.log))
+  })
+
+  it('so a retroactive fact leaves a closed row behind in every store', () => {
+    const before = initialState()
+    const after = reducer(before, {
+      type: 'addFact', attr: 'salary', value: 99_000, validFrom: day(2026, 2, 1),
+    })
+
+    for (const strategy of STRATEGIES) {
+      const sizeBefore = strategy.size(materialize(strategy, before.log, cfg).state)
+      const sizeAfter = strategy.size(materialize(strategy, after.log, cfg).state)
+      expect(sizeAfter, `${strategy.name} lost stored records`).toBeGreaterThan(sizeBefore)
+    }
   })
 })

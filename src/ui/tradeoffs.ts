@@ -11,8 +11,8 @@ export type Tradeoff = { for: string[]; against: string[] }
 export const TRADEOFFS: Record<string, Tradeoff> = {
   deltas: {
     for: [
+      'Facts are immutable. Nothing is ever edited or deleted, so the store is already the audit record — replayable, replicable, and reviewable without a second system.',
       'Writes are always one record, and a correction costs exactly what an ordinary fact costs.',
-      'Nothing is ever destroyed, so the log is already the audit trail.',
     ],
     against: [
       'Every read replays the whole history.',
@@ -21,28 +21,29 @@ export const TRADEOFFS: Record<string, Tradeoff> = {
   },
   intervals: {
     for: [
+      'No row is ever mutated in place. A superseded row is closed in system time, not edited, so every past belief stays on disk and stays queryable.',
       'Reads are a direct lookup: find the one row containing the coordinate.',
-      'Half-open ranges tile time exactly, so “what did we believe then” is an ordinary query.',
     ],
     against: [
-      'Writes rewrite: a row is closed in system time and replacements opened.',
-      'Clipping a retroactive fact wrongly lets it swallow every later change — silently.',
+      'One write touches several rows — closing and reopening neighbours rather than appending.',
+      'Clipping a retroactive fact wrongly lets it swallow every later change, silently.',
     ],
   },
   snapshots: {
     for: [
       'Reads are a direct lookup with no replay at all.',
-      'State at a moment is stored rather than derived, so nothing has to be reconstructed.',
+      'State at a moment is stored rather than derived, so nothing has to be reconstructed at read time.',
     ],
     against: [
+      'Snapshots are derived state, not the record. They get rebuilt, so the audit trail has to live somewhere else — you have two things to trust instead of one.',
       'Every snapshot restates every attribute, including the ones that did not change.',
-      'A retroactive fact invalidates and rebuilds every snapshot after it — the cost scales with how far back it reaches.',
+      'A retroactive fact invalidates and rebuilds every snapshot after it; the cost scales with how far back it reaches.',
     ],
   },
   hybrid: {
     for: [
-      'Replay is bounded: one snapshot plus at most k events.',
-      'A single knob trades storage against read cost, and you can move it after the fact.',
+      'The log stays immutable and authoritative; the snapshots are only an index over it, and can be thrown away and rebuilt.',
+      'Replay is bounded: one snapshot plus at most k events. One knob trades storage against read cost.',
     ],
     against: [
       'Two structures to keep consistent instead of one.',
@@ -54,8 +55,9 @@ export const TRADEOFFS: Record<string, Tradeoff> = {
       'The cheapest writes here, because nothing downstream is touched. This is exactly why it gets shipped.',
     ],
     against: [
-      'It is wrong. Snapshots written before a retroactive fact keep values the fact should have replaced.',
-      'The failure is silent: no exception, no error log, just an old number returned confidently forever.',
+      'It is wrong. Snapshots written before a retroactive fact keep values that fact should have replaced.',
+      'The failure is silent: no exception, no error log, just an old number returned confidently, forever.',
+      'The underlying log is still correct, which makes it worse — the data is fine and the answers are not, so the bug survives every check that looks at storage.',
     ],
   },
 }

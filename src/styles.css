@@ -46,11 +46,25 @@ h3 { font-size: 13px; }
 }
 
 .masthead { border-bottom: 1px solid var(--rule); padding-bottom: 18px; margin-bottom: 24px; }
-.masthead p { margin: 8px 0 0; color: var(--ink-soft); max-width: 68ch; }
+.masthead .lede {
+  margin: 6px 0 14px;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+/* Two columns so the prose uses the full width without the 120-character
+   lines that full width would otherwise produce. */
+.intro {
+  columns: 2;
+  column-gap: 36px;
+  color: var(--ink-soft);
+}
+.intro p { margin: 0 0 10px; break-inside: avoid; }
+@media (max-width: 760px) { .intro { columns: 1; } }
 
 .band { margin-bottom: 32px; }
 .band > header { margin-bottom: 12px; }
-.band > header p { margin: 4px 0 0; color: var(--ink-faint); font-size: 13px; max-width: 74ch; }
+.band > header p { margin: 4px 0 0; color: var(--ink-faint); font-size: 13px; max-width: 108ch; }
 
 .panel {
   background: var(--panel);

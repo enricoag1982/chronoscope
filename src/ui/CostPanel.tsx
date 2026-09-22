@@ -88,12 +88,12 @@ export function CostPanel({ snapshotInterval }: Props) {
 
   return (
     <div className="panel">
-      <p style={{ margin: '0 0 12px', color: 'var(--ink-faint)', fontSize: 12, maxWidth: '70ch' }}>
+      <p style={{ margin: '0 0 12px', color: 'var(--ink-faint)', fontSize: 12, maxWidth: '104ch' }}>
         Modelled projections, not measurements: closed-form functions of each
         strategy&rsquo;s stated mechanics (see <code>core/cost.ts</code>), not a
         benchmark — nothing here runs a strategy or times anything.
       </p>
-      <p style={{ margin: '0 0 12px', color: 'var(--ink-faint)', fontSize: 12, maxWidth: '70ch' }}>
+      <p style={{ margin: '0 0 12px', color: 'var(--ink-faint)', fontSize: 12, maxWidth: '104ch' }}>
         Growth below is in <strong>N</strong>, the number of facts. Attributes per
         entity (<strong>A</strong>) and horizon length (<strong>H</strong>) are held
         fixed and appear in the notation where a row depends on them, so

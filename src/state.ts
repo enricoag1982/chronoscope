@@ -24,7 +24,13 @@ export type Action =
 const clamp = (d: Day) => Math.min(HORIZON.end, Math.max(HORIZON.start, d))
 
 export function initialState(): AppState {
-  const clock = latestSystemTime(SCENARIO)
+  // One day past the last recording, not on it. "Now" is after the last thing
+  // we wrote down, and the distinction matters: a fact recorded on the same day
+  // as an open row closes that row with a zero-width system range, which no
+  // query can ever observe and which the stores therefore drop. Starting the
+  // clock on the last recording made the very first fact a reader adds destroy
+  // a stored row instead of superseding it.
+  const clock = latestSystemTime(SCENARIO) + 1
   return {
     log: SCENARIO,
     clock,
