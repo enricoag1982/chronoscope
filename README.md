@@ -67,5 +67,7 @@ Deploys to GitHub Pages on push to main, gated on the test suite.
 
 ## Design notes
 
-See [PLAN.md](PLAN.md) for the build plan and [Chronoscope.md](Chronoscope.md)
-for the original concept.
+[DESIGN.md](DESIGN.md) covers the approach, the key decisions and their
+tradeoffs, what changed during the build, and the known limits.
+[PLAN.md](PLAN.md) is the build plan and [Chronoscope.md](Chronoscope.md) the
+original concept.
