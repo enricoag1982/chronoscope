@@ -46,7 +46,7 @@ describe('the app renders', () => {
 
   it('showing all five representations and the scale band', () => {
     const markup = renderToStaticMarkup(<App />)
-    for (const s of ['Deltas', 'Intervals', 'Snapshots', 'Hybrid']) {
+    for (const s of ['Event log', 'Intervals', 'Snapshots', 'Hybrid']) {
       expect(markup).toContain(s)
     }
     expect(markup).toContain('Representations')

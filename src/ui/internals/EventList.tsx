@@ -1,6 +1,6 @@
 import { formatDay } from '../../core/dates'
 import type { Day, Fact } from '../../core/types'
-import type { DeltaState } from '../../core/strategies/deltas'
+import type { EventLogState } from '../../core/strategies/events'
 import { show } from '../Readout'
 
 /**
@@ -11,7 +11,7 @@ import { show } from '../Readout'
  */
 export function EventList({
   state, systemCursor,
-}: { state: DeltaState; systemCursor: Day }) {
+}: { state: EventLogState; systemCursor: Day }) {
   if (state.facts.length === 0) {
     return <div style={{ fontSize: 12, color: 'var(--ink-faint)' }}>no facts</div>
   }

@@ -18,16 +18,16 @@ const BASE: CostParams = {
 }
 
 const models = COST_MODELS as Record<
-  'deltas' | 'intervals' | 'snapshots' | 'snapshotStale' | 'hybrid',
+  'events' | 'intervals' | 'snapshots' | 'snapshotStale' | 'hybrid',
   CostModel
 >
 
-describe('deltas read grows with history, direct-lookup reads do not', () => {
+describe('events read grows with history, direct-lookup reads do not', () => {
   const small = { ...BASE, facts: 100 }
   const large = { ...BASE, facts: 100_000 }
 
-  it('deltas read scales up with N', () => {
-    expect(models.deltas.read(large)).toBeGreaterThan(models.deltas.read(small) * 100)
+  it('events read scales up with N', () => {
+    expect(models.events.read(large)).toBeGreaterThan(models.events.read(small) * 100)
   })
 
   it('intervals read does not grow with N', () => {
@@ -39,15 +39,15 @@ describe('deltas read grows with history, direct-lookup reads do not', () => {
   })
 })
 
-describe('snapshots duplicate state relative to deltas, and the gap widens', () => {
-  it('snapshots storage exceeds deltas storage', () => {
-    expect(models.snapshots.storage(BASE)).toBeGreaterThan(models.deltas.storage(BASE))
+describe('snapshots duplicate state relative to events, and the gap widens', () => {
+  it('snapshots storage exceeds events storage', () => {
+    expect(models.snapshots.storage(BASE)).toBeGreaterThan(models.events.storage(BASE))
   })
 
   it('the storage gap widens as N grows', () => {
     const gapAt = (facts: number) => {
       const p = { ...BASE, facts }
-      return models.snapshots.storage(p) - models.deltas.storage(p)
+      return models.snapshots.storage(p) - models.events.storage(p)
     }
     const gapSmall = gapAt(100)
     const gapLarge = gapAt(100_000)
@@ -100,7 +100,7 @@ describe('hybrid: snapshot interval trades storage against read cost', () => {
   })
 })
 
-describe('retroactive depth: snapshots pays for it, intervals and deltas do not', () => {
+describe('retroactive depth: snapshots pays for it, intervals and events do not', () => {
   it('snapshots retro cost rises with retroDepth', () => {
     const shallow = models.snapshots.retro({ ...BASE, retroDepth: 0 })
     const deep = models.snapshots.retro({ ...BASE, retroDepth: 1 })
@@ -119,9 +119,9 @@ describe('retroactive depth: snapshots pays for it, intervals and deltas do not'
     expect(deep).toBe(shallow)
   })
 
-  it('deltas retro cost is flat regardless of retroDepth', () => {
-    const shallow = models.deltas.retro({ ...BASE, retroDepth: 0 })
-    const deep = models.deltas.retro({ ...BASE, retroDepth: 1 })
+  it('events retro cost is flat regardless of retroDepth', () => {
+    const shallow = models.events.retro({ ...BASE, retroDepth: 0 })
+    const deep = models.events.retro({ ...BASE, retroDepth: 1 })
     expect(deep).toBe(shallow)
   })
 })
@@ -190,12 +190,12 @@ describe('notation labels exist for every measure of every model', () => {
 describe('costCurve', () => {
   it('samples the given measure over the given range, holding the rest of the params fixed', () => {
     const range = [0, 10, 100, 1_000]
-    const points = costCurve(models.deltas.storage, BASE, range)
+    const points = costCurve(models.events.storage, BASE, range)
 
     expect(points).toHaveLength(range.length)
     points.forEach((point, i) => {
       expect(point.x).toBe(range[i])
-      expect(point.y).toBe(models.deltas.storage({ ...BASE, facts: range[i]! }))
+      expect(point.y).toBe(models.events.storage({ ...BASE, facts: range[i]! }))
     })
   })
 })

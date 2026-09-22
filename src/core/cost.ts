@@ -10,7 +10,7 @@
  * with rather than taken on faith.
  *
  * Throughout, "records" means the unit each strategy actually stores:
- * one fact for deltas, one bitemporal row for intervals, one attribute-value
+ * one fact for the event log, one bitemporal row for intervals, one attribute-value
  * for snapshots (a full-entity snapshot is `attrs` records, which is the
  * point being modelled — see storage() below).
  */
@@ -47,19 +47,19 @@ export type CostModel = {
 // trusting the caller.
 const atLeast1 = (n: number): number => Math.max(n, 1)
 
-// --- deltas ---------------------------------------------------------------
+// --- events ---------------------------------------------------------------
 //
 // storage: exactly the facts, one record each — nothing is derived or duplicated.
 // read: query() has no index to consult, so it walks every fact in the log
-//   (see deltas.ts: readCost is state.facts.length, not filtered by attr).
+//   (see events.ts: readCost is state.facts.length, not filtered by attr).
 // append: one fact in, one record out.
 // retro: a retroactive fact is still just one fact — appending it costs the
-//   same as appending any other. The cost of "being retroactive" for deltas
+//   same as appending any other. The cost of "being retroactive" for the event log
 //   is paid by every read from then on (already captured by read growing
 //   with N), never by the write itself. That asymmetry is the whole pitch
 //   of the strategy, so retro() deliberately does NOT depend on retroDepth.
-const deltasModel: CostModel = {
-  key: 'deltas',
+const eventsModel: CostModel = {
+  key: 'events',
   storage: (p) => p.facts,
   read: (p) => p.facts,
   append: () => 1,
@@ -237,7 +237,7 @@ const hybridModel: CostModel = {
     read: 'O(A + k)',
     // Not O(1): flat in the number of facts, but the scheduled grid snapshot
     // is A records amortised over a k-event cell. Writing O(1) here would let
-    // a reader skimming the table mistake it for deltas' genuinely constant
+    // a reader skimming the table mistake it for the event log' genuinely constant
     // append, which is the one comparison this row must not fudge.
     append: 'O(1 + A/k)',
     retro: 'O(1 + d·N/k·A)',
@@ -245,7 +245,7 @@ const hybridModel: CostModel = {
 }
 
 export const COST_MODELS: Record<string, CostModel> = {
-  deltas: deltasModel,
+  events: eventsModel,
   intervals: intervalsModel,
   snapshots: snapshotsModel,
   snapshotStale: snapshotStaleModel,

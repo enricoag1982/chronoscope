@@ -1,4 +1,4 @@
-import { deltas } from './deltas'
+import { events } from './events'
 import { hybrid } from './hybrid'
 import { intervals } from './intervals'
 import { snapshots } from './snapshots'
@@ -20,7 +20,7 @@ import type { Strategy } from './index'
 export type AnyStrategy = Strategy<any>
 
 export const STRATEGIES: readonly AnyStrategy[] = [
-  deltas,
+  events,
   intervals,
   snapshots,
   hybrid,

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Day } from '../../core/types'
-import type { DeltaState } from '../../core/strategies/deltas'
+import type { EventLogState } from '../../core/strategies/events'
 import type { IntervalState } from '../../core/strategies/intervals'
 import { EventList } from './EventList'
 import { IntervalRows } from './IntervalRows'
@@ -20,8 +20,8 @@ export type InternalsProps = {
  */
 export function renderInternals(key: string, state: unknown, props: InternalsProps): ReactNode {
   switch (key) {
-    case 'deltas':
-      return <EventList state={state as DeltaState} systemCursor={props.systemCursor} />
+    case 'events':
+      return <EventList state={state as EventLogState} systemCursor={props.systemCursor} />
     case 'intervals':
       return <IntervalRows state={state as IntervalState} horizon={props.horizon} />
     case 'snapshots':

@@ -61,12 +61,12 @@ describe('absence and legibility', () => {
 
 describe('series colour', () => {
   it('is keyed by strategy, so hiding one never repaints the others', () => {
-    expect(seriesColour('deltas')).toBe(SERIES.deltas)
+    expect(seriesColour('events')).toBe(SERIES.events)
     expect(seriesColour('snapshotStale')).toBe(SERIES.snapshotStale)
   })
 
   it('covers all five strategies with distinct hues', () => {
-    const keys = ['deltas', 'intervals', 'snapshots', 'hybrid', 'snapshotStale']
+    const keys = ['events', 'intervals', 'snapshots', 'hybrid', 'snapshotStale']
     const used = keys.map(seriesColour)
     expect(new Set(used).size).toBe(5)
   })

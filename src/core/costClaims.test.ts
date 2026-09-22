@@ -67,7 +67,7 @@ describe('the model grows the way the code grows', () => {
     })
   }
 
-  it('snapshots and hybrid pay for depth; deltas, intervals and snapshotStale do not', () => {
+  it('snapshots and hybrid pay for depth; events, intervals and snapshotStale do not', () => {
     // snapshots pays because it invalidates every cached point at or after
     // the retroactive valid time, and it has one for every distinct valid
     // time. hybrid now pays too, for the same reason at a coarser grain: its
@@ -75,7 +75,7 @@ describe('the model grows the way the code grows', () => {
     // of grid points it must invalidate still grows with the history — it is
     // just smaller than snapshots' by a factor of k. That is new: the old
     // calendar-day grid was pinned to a fixed horizon, so its retroactive
-    // cost used to be flat in N. deltas and intervals stay flat because their
+    // cost used to be flat in N. events and intervals stay flat because their
     // write paths never depend on how far back a fact reaches (see their
     // model comments above); snapshotStale stays flat because it skips
     // invalidation entirely, which is the bug it demonstrates.

@@ -70,7 +70,7 @@ export function inkOn(hex: string): string {
  * series never repaints the ones that remain.
  */
 export const SERIES: Record<string, string> = {
-  deltas: '#2a78d6',
+  events: '#2a78d6',
   intervals: '#eb6834',
   snapshots: '#1baf7a',
   hybrid: '#eda100',

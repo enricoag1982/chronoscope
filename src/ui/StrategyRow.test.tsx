@@ -85,14 +85,14 @@ describe('IntervalRows', () => {
 
 describe('last-fact ops', () => {
   // The last SCENARIO fact is the backdated raise: it invalidates cached
-  // snapshots but costs deltas nothing beyond the append itself.
+  // snapshots but costs the event log nothing beyond the append itself.
   it('snapshots shows a non-zero invalidated count', () => {
     const markup = renderRow(strategyByKey('snapshots')!, SCENARIO)
     expect(statFor(markup, 'invalidated')).toBeGreaterThan(0)
   })
 
-  it('deltas shows a zero invalidated count', () => {
-    const markup = renderRow(strategyByKey('deltas')!, SCENARIO)
+  it('events shows a zero invalidated count', () => {
+    const markup = renderRow(strategyByKey('events')!, SCENARIO)
     expect(statFor(markup, 'invalidated')).toBe(0)
   })
 })

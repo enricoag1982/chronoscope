@@ -20,9 +20,14 @@ wrong answer.
 
 ## The five representations
 
+Every event carries an absolute assignment (`salary := 72,000`) rather than a
+difference. A difference only encodes numeric attributes, and it makes each
+event's meaning depend on every earlier one, so a retroactive insert would
+change what every later event means.
+
 | | Read | Write | Retroactive write |
 |---|---|---|---|
-| Deltas | replay | append | append |
+| Event log | replay | append | append |
 | Intervals | direct lookup | close and reopen | close and reopen |
 | Snapshots | direct lookup | write snapshot | invalidate and rebuild |
 | Hybrid | snapshot + bounded replay | append | rebuild affected grid points |

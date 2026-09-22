@@ -4,13 +4,13 @@ import { HORIZON, SCENARIO, append, latestSystemTime, makeFact, MonotonicSystemT
 import { referenceQuery } from './reference'
 import { DEFAULT_CONFIG, materialize } from './strategies/index'
 import type { Strategy } from './strategies/index'
-import { deltas } from './strategies/deltas'
+import { events } from './strategies/events'
 import { intervals } from './strategies/intervals'
 import { ATTRS } from './types'
 import type { Fact } from './types'
 import { day } from './dates'
 
-const CORRECT: Strategy<never>[] = [deltas, intervals] as unknown as Strategy<never>[]
+const CORRECT: Strategy<never>[] = [events, intervals] as unknown as Strategy<never>[]
 
 /**
  * Every strategy must agree with the oracle at every coordinate. Because the

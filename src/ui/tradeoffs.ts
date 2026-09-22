@@ -9,10 +9,11 @@
 export type Tradeoff = { for: string[]; against: string[] }
 
 export const TRADEOFFS: Record<string, Tradeoff> = {
-  deltas: {
+  events: {
     for: [
       'Facts are immutable. Nothing is edited or deleted, so the store is itself the audit record: replayable, replicable, and reviewable without a second system.',
       'Writes are always one record, and a correction costs exactly what an ordinary fact costs.',
+      'Events assign a value rather than a difference, so inserting one dated in the past cannot change what any other event means.',
     ],
     against: [
       'Every read replays the whole history.',
