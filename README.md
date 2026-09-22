@@ -1,21 +1,65 @@
 # Chronoscope
 
-An interactive environment for comparing bitemporal storage representations.
+**A bitemporal modeling playground.** Two clocks per fact, and why one is never enough.
 
-Real-world facts arrive out of order. A salary change effective 1 March may only be
-recorded on 10 June — after a manager change effective 1 April has already been
-written. Once history is mutable, how you *represent* it stops being an
-implementation detail: deltas, validity intervals and snapshots can describe the
-same logical history and behave completely differently when a retroactive fact
-lands.
+Live: https://enricoag1982.github.io/chronoscope/
 
-Chronoscope applies the same facts to five representations side by side and shows
-what each one costs — including one deliberately incorrect strategy whose bug the
-tool demonstrates rather than describes.
+Bitemporal modeling gives every fact two timestamps — when it became true in the
+world, and when the system found out. Facts are recorded rather than overwritten,
+so the store can answer both "what is true?" and "what did we believe, and when?".
 
-See [PLAN.md](PLAN.md) for the design, and [Chronoscope.md](Chronoscope.md) for the
-concept it is built from.
+The idea is simple; the primitives are not. Pick the wrong ones and a fact dated
+in the past silently swallows every later change, or a cached view keeps serving
+a value corrected months ago, or amending an entry means editing history in place
+— at which point the audit trail you built it all for is gone. These failures are
+quiet. Nothing throws.
 
-## Status
+Chronoscope stores one small history five ways and lets you drop facts into the
+past to see what each representation costs, and which one gets it wrong.
 
-In development.
+## The five representations
+
+| | Read | Write | Retroactive write |
+|---|---|---|---|
+| Deltas | replay | append | append |
+| Intervals | direct lookup | close and reopen | close and reopen |
+| Snapshots | direct lookup | write snapshot | invalidate and rebuild |
+| Hybrid | snapshot + bounded replay | append | rebuild affected grid points |
+| Snapshots, uninvalidated | direct lookup | write snapshot | **nothing — and that is the bug** |
+
+The fifth is a deliberately incorrect peer of the others: same interface, same
+materialisation, same rendering. It skips invalidation, so a snapshot taken
+before a retroactive fact keeps a value that fact should have replaced, and it
+answers confidently and wrongly forever after. The tool demonstrates the failure
+rather than describing it.
+
+## How correctness is established
+
+`core/reference.ts` is a deliberately slow, obviously correct scan of the fact
+log — the oracle. Every strategy is judged against it and nothing else.
+
+The value surface is piecewise constant and breaks only at recorded coordinates,
+so sweeping those breakpoints and their neighbours visits every distinct region.
+That sweep runs against the shipped scenario and against generated histories, for
+every strategy, at every coordinate. The incorrect strategy gets an inverted test
+pinning exactly where it diverges and asserting it agrees everywhere else.
+
+`core/costClaims.test.ts` holds the cost model to the implementations: it
+compares how each modelled measure grows against operations the strategies
+actually perform. It has already caught one real drift.
+
+## Running it
+
+```
+npm install
+npm test        # 374 tests
+npm run dev
+npm run build
+```
+
+Deploys to GitHub Pages on push to main, gated on the test suite.
+
+## Design notes
+
+See [PLAN.md](PLAN.md) for the build plan and [Chronoscope.md](Chronoscope.md)
+for the original concept.

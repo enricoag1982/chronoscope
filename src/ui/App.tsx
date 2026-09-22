@@ -16,34 +16,35 @@ export function App() {
   return (
     <div className="app">
       <header className="masthead">
-        <h1>Chronoscope</h1>
+        <h1>Chronoscope: a bitemporal modeling playground</h1>
         <p className="lede">Two clocks per fact, and why one is never enough.</p>
 
         <div className="intro">
           <p>
-            Ask a database what someone earned on 1 March and it will tell you. Ask
-            what it <em>would have told you</em> on 1 March, and most systems cannot
-            answer — they overwrote that the moment a correction arrived.
+            Bitemporal modeling is a data design approach that gives every fact two
+            timestamps: when it became true in the world, and when the system found
+            out. Facts are recorded rather than overwritten, so the store can answer
+            both “what is true?” and “what did we believe, and when?”.
           </p>
           <p>
-            That second question is not academic. A tax authority assesses you on the
-            figures as they stood when you filed, not as they stand today. A regulator
-            asks why a transaction was approved last quarter, and the only honest reply
-            replays the data you actually held then. An incident review asks whether an
-            outage was caused by a bug or by bad data — and you cannot tell, if the data
-            has since been corrected underneath you.
+            Take tax. An authority assesses you on the figures as they stood when you
+            filed — not as they stand today, after three corrections. With one
+            timestamp you cannot reproduce that filing, because the numbers behind it
+            have quietly moved. The same shape turns up everywhere: a regulator asking
+            why a transaction was approved last quarter, or an incident review trying
+            to separate a bug from bad data that has since been fixed underneath it.
           </p>
           <p>
-            Bitemporal modelling answers all three by giving every fact two timestamps:
-            when it became true in the world, and when your system found out. Nothing is
-            overwritten. “What is true now” and “what did we believe then” stop being
-            different problems and become the same query at different coordinates.
+            The idea is simple; the primitives are not. Pick the wrong ones and a fact
+            dated in the past silently swallows every later change, or a cached view
+            keeps serving a value that was corrected months ago, or amending an entry
+            means editing history in place — at which point the audit trail you built
+            all this for is gone. These failures are quiet. Nothing throws.
           </p>
           <p>
-            The power is real and so is the bill. This page stores one small history five
-            ways and lets you drop a fact into the past to see what each one pays. Four
-            stay correct and disagree only about cost. The fifth is the shortcut most
-            systems reach for, and it answers confidently and wrongly.
+            So this page makes them visible. One small history is stored five ways
+            below. Drag the two clocks, drop facts into the past, and watch what each
+            representation costs — and which one gets it wrong.
           </p>
         </div>
       </header>

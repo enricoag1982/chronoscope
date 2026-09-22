@@ -124,7 +124,7 @@ const intervalsModel: CostModel = {
   // Amplification is real, but it belongs to a model this one does not have:
   // facts carrying an explicit valid RANGE. "Salary was wrong for all of Q1"
   // spans every row in that quarter and rewrites each. Charging that cost
-  // here would be modelling a different implementation than the one shipped,
+  // here would be modeling a different implementation than the one shipped,
   // which costClaims.test.ts exists to prevent.
   retro: () => INTERVALS_APPEND_OPS,
   notation: { storage: 'O(N)', read: 'O(1)', append: 'O(1)', retro: 'O(1)' },
